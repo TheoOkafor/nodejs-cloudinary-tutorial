@@ -1,15 +1,35 @@
 const express = require('express');
 const multer = require('multer');
 const cors = require('cors');
-const dataUri = require('datauri');
+const dotenv = require('dotenv');
 const path = require('path');
+const DataUri = require('datauri');
 
 cloudinary = require('cloudinary').v2;
+
+dotenv.config();
+const dataUri = new DataUri();
+
+const {
+  CLOUDINARY_API_KEY,
+  CLOUDINARY_AUTHORIZATION,
+  CLOUDINARY_CLOUD_NAME,
+} = process.env;
+
+cloudinary.config({ 
+  cloud_name: CLOUDINARY_CLOUD_NAME, 
+  api_key: CLOUDINARY_API_KEY, 
+  api_secret: CLOUDINARY_AUTHORIZATION
+});
 
 const upload = multer();
 const app = express();
 
 app.use(express.json());
+app.use((request, response, next) => {
+  response.header("Access-Control-Allow-Origin", "*");
+  next();
+});
 
 const whitelist = [ 'http://localhost:5000' ];
 const corsOptions = {
@@ -22,7 +42,7 @@ const corsOptions = {
   }
 }
 
-app.post('/cloud-upload', cors(corsOptions), upload.single('file'), (request, response) => {
+app.post('/cloud-upload', upload.single('file'), (request, response) => {
   let image = request.file;
   if (image) {
     image = dataUri.format(path.extname(image.originalname).toString(), image.buffer).content;
